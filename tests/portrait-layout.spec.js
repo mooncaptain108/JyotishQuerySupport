@@ -2,9 +2,8 @@ const { test, expect } = require('@playwright/test');
 const paulFixture = require('./fixtures/paul.json');
 
 // Phone/tablet portrait layout (server bf2f138):
-// - #mainRow was overflow:auto (swipe to the clipped right-hand panels); now
-//   reverted to overflow:hidden so the inner scroll box doesn't keep Android's
-//   browser bar pinned above the menu -- portrait clipping is the accepted cost.
+// - #mainRow is overflow:auto, so the divisional/dasha panels that don't fit a
+//   portrait viewport can be scrolled/swiped to instead of being clipped.
 // - The toolbar wraps instead of clipping its right-hand buttons.
 
 const PORTRAIT = [
@@ -27,15 +26,35 @@ async function loadChart(page) {
 }
 
 for (const vp of PORTRAIT) {
-  test(`${vp.name}: #mainRow is not its own scroll box`, async ({ page }) => {
+  test(`${vp.name}: #mainRow scrolls to reach the right-hand panels`, async ({ page }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await loadChart(page);
 
-    const overflow = await page.evaluate(() => {
-      const cs = getComputedStyle(document.getElementById('mainRow'));
-      return [cs.overflowX, cs.overflowY];
+    const overflow = await page.evaluate(() => getComputedStyle(document.getElementById('mainRow')).overflowX);
+    expect(overflow).toBe('auto');
+
+    // Rightmost visible panel in #mainRow -- dasha if shown, else divisional.
+    const target = await page.evaluate(() => {
+      const ids = ['dashaPanel', 'd9Area'];
+      return ids.find(id => {
+        const el = document.getElementById(id);
+        return el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+      });
     });
-    expect(overflow).toEqual(['hidden', 'hidden']);
+    expect(target).toBeTruthy();
+
+    // Scroll #mainRow all the way right; the panel's right edge must then be
+    // on-screen (it was previously clipped with no way to reach it).
+    await page.evaluate(() => {
+      const m = document.getElementById('mainRow');
+      m.scrollLeft = m.scrollWidth;
+    });
+    const { right, mainRight } = await page.evaluate((id) => ({
+      right: document.getElementById(id).getBoundingClientRect().right,
+      mainRight: document.getElementById('mainRow').getBoundingClientRect().right,
+    }), target);
+    expect(right).toBeLessThanOrEqual(mainRight + 1);
+    expect(right).toBeLessThanOrEqual(vp.width + 1);
   });
 
   test(`${vp.name}: no explicit pan slider (swipe only)`, async ({ page }) => {
