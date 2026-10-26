@@ -32,7 +32,7 @@ test('button in Settings opens the popover with grouped options', async ({ page 
     ['Degrees', ['4:30 4.50', 'Degrees bold']],
     ['Planets', ['Su Mo', 'Bold', 'White']],
     ['Signs', ['Ar 1', 'Bold', 'White']],
-    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Rashi Data Nakshatra text white', 'Transit View text: remove all spaces']],
+    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Dasha Periods slash white', 'Rashi Data Nakshatra text white', 'Transit View text: remove all spaces']],
     ['Dialogs', ['Analysis bold', 'Analysis text plain']],
     ['Chart lines', ['Chart lines white', 'Chart lines bold']],
   ]);
@@ -75,6 +75,7 @@ const TWEAKS = [
   ['#chkTwPanelWhite', 'jyotish_tw_panel_white', 'tw-panel-white'],
   ['#chkTwPanelBold', 'jyotish_tw_panel_bold', 'tw-panel-bold'],
   ['#chkTwDashaDateWhite', 'jyotish_tw_dasha_date_white', 'tw-dasha-date-white'],
+  ['#chkTwDashaSlashWhite', 'jyotish_tw_dasha_slash_white', 'tw-dasha-slash-white'],
   ['#chkTwRashiNakWhite', 'jyotish_tw_rashi_nak_white', 'tw-rashi-nak-white'],
   ['#chkTwAnalysisBold', 'jyotish_tw_analysis_bold', 'tw-analysis-bold'],
   ['#chkTwLinesWhite', 'jyotish_tw_lines_white', 'tw-lines-white'],
@@ -287,6 +288,21 @@ test('panel labels white bolds/whitens the Dasha Now/Top buttons; dates have the
   const dates = await st();
   expect(dates.date).toEqual([before.date[0], 'rgb(255, 255, 255)']);       // same size, white
   expect(dates.btn).toEqual(before.btn);                                    // buttons untouched
+});
+
+test('Dasha Periods slash white: the Maha/Antar slash matches the white dates', async ({ page }) => {
+  const st = () => page.evaluate(() => {
+    const sl = getComputedStyle(document.querySelector('#dashaList .dr-slash'));
+    const d = getComputedStyle(document.querySelector('#dashaList .dr-date'));
+    return { slash: [sl.fontFamily, sl.fontSize, sl.fontWeight, sl.color], date: [d.fontFamily, d.fontSize, d.fontWeight, d.color] };
+  });
+  const before = await st();
+  expect(await page.evaluate(() => document.querySelector('#dashaList .dr-slash').textContent)).toBe('/');
+  expect(before.slash[3]).toBe('rgb(96, 128, 160)');                        // #6080a0 default
+  await page.evaluate(() => document.body.classList.add('tw-dasha-slash-white', 'tw-dasha-date-white'));
+  const on = await st();
+  expect(on.slash).toEqual(on.date);                                        // same font + white as the dates
+  expect(on.slash[3]).toBe('rgb(255, 255, 255)');
 });
 
 test('anyone with Panel labels white keeps white dasha dates (one-time carry-over)', async ({ page }) => {
