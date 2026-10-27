@@ -34,9 +34,13 @@ same look and feel as the web app.
    dasha in the browser match the server exactly on 61 charts
    (`tests/engine-parity.spec.js`). About 2 ms per chart.
 2. Engine moved to `static/engine/` on the dev server (2026-10-27).
+3. Ported and matching the server (2026-10-27): divisional charts,
+   panchanga (sunrise), transits, time zone offsets
+   (`tests/engine-tz-parity.spec.js`) and zone lookup by coordinates
+   (bundled map, coarse near borders: use the server when online).
+   Ashtakavarga skipped: the app doesn't use it.
 
 ## Still to port
 
-Divisional charts, transits, panchanga, ashtakavarga, time zone lookup,
-then Muhurta search (Web Workers). Then switch `index.html` from the
-server API to the engine, then the Capacitor wrapper.
+Muhurta search (Web Workers). Then switch `index.html` from the server
+API to the engine, then the Capacitor wrapper.
