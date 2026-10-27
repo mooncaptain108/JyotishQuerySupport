@@ -45,6 +45,7 @@ test('offline engine matches the server chart', async ({ page, request }) => {
     const eng = await import('/static/engine/engine.js');
     await eng.initEngine();
     window.computeChart = eng.computeChart;
+    window.computeTransit = eng.computeTransit;
   });
   const diffs = [];
   let maxDeg = 0;
@@ -63,11 +64,37 @@ test('offline engine matches the server chart', async ({ page, request }) => {
         if (k in s && s[k] !== l[k]) bad.push(`${label} ${k} ${s[k]} vs ${l[k]}`);
     }
     srv.bhavas.forEach((b, i) => { if (b.rashi !== loc.bhavas[i].rashi) bad.push(`house ${b.house} rashi`); });
+    // Everything else on lagna, grahas and bhavas must be identical.
+    for (const k of ['birth_data', 'lagna', 'grahas', 'bhavas'])
+      if (JSON.stringify(srv[k]) !== JSON.stringify(loc[k])) bad.push(`${k} not identical`);
     const sd = flatDasha(srv.dasha), ld = flatDasha(loc.dasha);
     if (sd.length !== ld.length) bad.push(`dasha count ${sd.length} vs ${ld.length}`);
     const i = sd.findIndex((x, k) => !sameP(x, ld[k]));
     if (i >= 0) bad.push(`dasha #${i}: ${sd[i].lord} ${sd[i].start} vs ${ld[i]?.lord} ${ld[i]?.start}`);
+    // Divisional charts: every sign exactly; degrees are unrounded floats.
+    srv.divisional_charts.forEach((sc, k) => {
+      const lc = loc.divisional_charts[k];
+      if (!lc || lc.chart_type !== sc.chart_type) { bad.push(`divisional #${k} ${sc.chart_type} missing`); return; }
+      const near = (a, b) => (a === null && b === null) || Math.abs(a - b) < 1e-5;
+      [['Lagna', sc.lagna, lc.lagna], ...sc.grahas.map((g, j) => [g.graha, g, lc.grahas[j]])].forEach(([lb, a, b]) => {
+        if (a.rashi !== b.rashi) bad.push(`${sc.chart_type} ${lb} rashi ${a.rashi} vs ${b.rashi}`);
+        else if (!near(a.degree_in_rashi, b.degree_in_rashi)) bad.push(`${sc.chart_type} ${lb} deg ${a.degree_in_rashi} vs ${b.degree_in_rashi}`);
+      });
+    });
+    if (srv.divisional_charts.length !== loc.divisional_charts.length) bad.push('divisional chart count');
+    if (JSON.stringify(srv.panchanga) !== JSON.stringify(loc.panchanga))
+      bad.push(`panchanga ${JSON.stringify(srv.panchanga)} vs ${JSON.stringify(loc.panchanga)}`);
     if (bad.length) diffs.push(`${name} ${bd.date} ${bd.time} tz ${bd.timezone_offset}: ${bad.join('; ')}`);
+  }
+  // Transit positions (/api/v1/chart/transit): the same comparison.
+  for (const c of cases().slice(0, 20)) {
+    const { name, ...bd } = c;
+    const srv = await (await request.post('/api/v1/chart/transit', { data: bd })).json();
+    const loc = await page.evaluate(bd => window.computeTransit(bd), bd);
+    if (JSON.stringify(srv) !== JSON.stringify(loc)) {
+      const k = Object.keys(srv).find(k => JSON.stringify(srv[k]) !== JSON.stringify(loc[k]));
+      diffs.push(`transit ${name}: ${k} ${JSON.stringify(srv[k]).slice(0, 200)} vs ${JSON.stringify(loc[k]).slice(0, 200)}`);
+    }
   }
   console.log(`engine parity: ${cases().length} charts, max longitude difference ${(maxDeg * 3600).toFixed(3)} arcsec`);
   expect(diffs).toEqual([]);
