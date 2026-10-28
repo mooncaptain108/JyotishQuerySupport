@@ -40,7 +40,14 @@ same look and feel as the web app.
    (bundled map, coarse near borders: use the server when online).
    Ashtakavarga skipped: the app doesn't use it.
 
-## Still to port
+4. Muhurta (2026-10-27): analysis + screening (`muhurta.js`, port of
+   `muhurta_analysis.py`) identical on 150 charts x 3 configs; search
+   (`muhurta-search.js`, Web Workers) gives identical result lists to the
+   server. Desktop: 10 days x 4 signs in 1.6 s. Phone speed unknown.
 
-Muhurta search (Web Workers). Then switch `index.html` from the server
-API to the engine, then the Capacitor wrapper.
+## Next
+
+All calculations the app uses now run offline. Next: switch `index.html`
+from the server API to the engine (server when online for geocoding,
+zone lookup and, if reachable, jyotish.allthisisthat.net for muhurta),
+then the Capacitor wrapper.
