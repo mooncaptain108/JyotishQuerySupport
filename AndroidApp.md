@@ -47,7 +47,9 @@ same look and feel as the web app.
 
 ## Next
 
-All calculations the app uses now run offline. Next: switch `index.html`
-from the server API to the engine (server when online for geocoding,
-zone lookup and, if reachable, jyotish.allthisisthat.net for muhurta),
-then the Capacitor wrapper.
+**Parked 2026-10-28** (end user not keen on an offline app). Next steps
+are in `AndroidNextSteps.md`.
+
+5. `index.html` switched (2026-10-27, server 9de62ac, image 0.1.1):
+   server when reachable, engine otherwise, via `apiFetch()`. Remaining:
+   the Capacitor wrapper.
