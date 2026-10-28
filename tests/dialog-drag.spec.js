@@ -11,16 +11,16 @@ test.beforeEach(async ({ page }) => {
   );
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
-  await page.evaluate(() => document.getElementById('dlgTransits').showModal());
+  await page.evaluate(() => document.getElementById('dlgEphemeris').showModal());
 });
 
 async function headerPoint(page) {
-  const b = await page.locator('#dlgTransits .dlg-header h2').boundingBox();
+  const b = await page.locator('#dlgEphemeris .dlg-header h2').boundingBox();
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
 async function dlgPos(page) {
-  const b = await page.locator('#dlgTransits').boundingBox();
+  const b = await page.locator('#dlgEphemeris').boundingBox();
   return { x: b.x, y: b.y };
 }
 
@@ -38,7 +38,7 @@ test('mouse drag on the header moves the dialog', async ({ page }) => {
 
 test('touch drag on the header moves the dialog', async ({ page }) => {
   expect(await page.evaluate(() =>
-    getComputedStyle(document.querySelector('#dlgTransits .dlg-header')).touchAction)).toBe('none');
+    getComputedStyle(document.querySelector('#dlgEphemeris .dlg-header')).touchAction)).toBe('none');
 
   const before = await dlgPos(page);
   const p = await headerPoint(page);
@@ -55,6 +55,6 @@ test('touch drag on the header moves the dialog', async ({ page }) => {
 });
 
 test('tapping ✕ still closes the dialog', async ({ page }) => {
-  await page.locator('#dlgTransits .dlg-close-x').click();
-  await expect(page.locator('#dlgTransits')).not.toBeVisible();
+  await page.locator('#dlgEphemeris .dlg-close-x').click();
+  await expect(page.locator('#dlgEphemeris')).not.toBeVisible();
 });

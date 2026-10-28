@@ -64,6 +64,69 @@ test('old toolbar transit controls are gone', async ({ page }) => {
   }
 });
 
+test('View menu no longer has Transits Control', async ({ page }) => {
+  await loadChart(page);
+  await page.locator('#viewDropdown .tb-btn').first().click();
+  await expect(page.locator('#viewMenu button')).toHaveText(['Chart', 'Transits', 'Chart & Transits', 'Ephemeris Report']);
+});
+
+// ◀ ▶ sit between the slider's right end and the unit list, and step the
+// transit by one unit each press (same date math as the slider).
+test('arrows sit between the slider and the unit list', async ({ page }) => {
+  await loadChart(page);
+  await openTransitsAt(page);
+  const box = id => page.locator('#' + id).boundingBox();
+  const [sl, prev, next, unit] = await Promise.all(['trSlider', 'trPrevBtn', 'trNextBtn', 'trUnit'].map(box));
+  expect(prev.x).toBeGreaterThanOrEqual(sl.x + sl.width);
+  expect(next.x).toBeGreaterThan(prev.x + prev.width - 1);
+  expect(unit.x).toBeGreaterThanOrEqual(next.x + next.width);
+  // same line, finger-sized
+  for (const b of [prev, next]) {
+    expect(Math.abs((b.y + b.height / 2) - (unit.y + unit.height / 2))).toBeLessThan(4);
+    expect(b.width).toBeGreaterThanOrEqual(36);
+  }
+});
+
+test('arrows step the transit one unit and refetch', async ({ page }) => {
+  await loadChart(page);
+  await openTransitsAt(page, '2026-01-31', '12:00:00');
+  const fetched = page.waitForResponse(r => r.url().includes('/api/v1/chart/transit'));
+  await page.click('#trNextBtn');
+  await fetched;
+  await expect(page.locator('#trDate')).toHaveValue('2026-02-01');
+  await page.click('#trPrevBtn');
+  await page.click('#trPrevBtn');
+  await expect(page.locator('#trDate')).toHaveValue('2026-01-30');
+  await expect(page.locator('#tDate')).toHaveValue('2026-01-30');      // canonical field follows
+  await page.selectOption('#trUnit', 'month');
+  await page.click('#trNextBtn');
+  await expect(page.locator('#trDate')).toHaveValue('2026-02-28');      // clamped like the slider
+  await page.selectOption('#trUnit', 'hour');
+  await page.click('#trPrevBtn');
+  await expect(page.locator('#trDate')).toHaveValue('2026-02-28');
+  await expect(page.locator('#trTime')).toHaveValue('11:00:00');
+  await expect(page.locator('#transitBar svg, #chart')).not.toHaveCount(0);
+});
+
+test('stacked under Dasha Periods, the arrows share one line', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('jyotish_transit_bar_pos', 'dasha'));
+  await loadChart(page);
+  await openTransitsAt(page);
+  await expect(page.locator('#transitBar')).toHaveClass(/tr-stacked/);
+  const prev = await page.locator('#trPrevBtn').boundingBox(), next = await page.locator('#trNextBtn').boundingBox();
+  expect(Math.abs(prev.y - next.y)).toBeLessThan(2);
+  expect(next.x).toBeGreaterThan(prev.x);
+});
+
+test('a failed transit fetch shows its error in the bar', async ({ page }) => {
+  await loadChart(page);
+  await openTransitsAt(page);
+  await page.route('**/api/v1/chart/transit', r => r.fulfill({ status: 500, body: '{}' }));
+  await page.click('#trNextBtn');
+  await expect(page.locator('#transitBar #transitErrMsg')).toHaveText('Error: Server error 500');
+  await expect(page.locator('#transitErrMsg')).toBeVisible();
+});
+
 test('bar is hidden in Chart view and shown in transit views', async ({ page }) => {
   await loadChart(page);
   await expect(page.locator('#transitBar')).toBeHidden();

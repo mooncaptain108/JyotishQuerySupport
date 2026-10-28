@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-// Loads a chart, then pins the Transits Control fields to a fixed
+// Loads a chart, then pins the transit settings (Transits dialog fields) to a fixed
 // date/time/location (New Delhi, 2026-09-05 12:00 IST) instead of "now" --
 // so the Ephemeris Report's own preload has deterministic values to assert
 // against, and so retrograde/direct state (which changes day to day) is
@@ -35,7 +35,7 @@ async function openEphemerisDialog(page) {
   await expect(page.locator('#dlgEphemeris')).toBeVisible();
 }
 
-test('opens from the View menu with fields preloaded from Transits Control', async ({ page }) => {
+test('opens from the View menu with fields preloaded from the transit settings', async ({ page }) => {
   await loadChartWithFixedTransit(page);
   await openEphemerisDialog(page);
 
