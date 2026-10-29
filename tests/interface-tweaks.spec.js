@@ -32,7 +32,7 @@ test('button in Settings opens the popover with grouped options', async ({ page 
     ['Degrees', ['4:30 4.50', 'Degrees bold']],
     ['Planets', ['Su Mo', 'Bold', 'White']],
     ['Signs', ['Ar 1', 'Bold', 'White']],
-    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Dasha Periods slash white', 'Rashi Data Nakshatra text white', 'Transit View text: remove all spaces']],
+    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Dasha Periods slash white', 'Rashi Data text white (degrees, signs, Nakshatra, Sunrise)', 'Transit View text: remove all spaces']],
     ['Dialogs', ['Analysis bold', 'Analysis text plain']],
     ['Chart lines', ['Chart lines white', 'Chart lines bold']],
   ]);
@@ -338,20 +338,33 @@ test('Analysis popover: smallest text raised to 0.88rem; Analysis bold bolds eve
   expect((await st()).weights).toEqual(['700']);
 });
 
-test('Rashi Data nakshatra: same colour as degree/sign by default; white with its tweak, same weight', async ({ page }) => {
+test('Rashi Data text white: degrees, signs, nakshatra and Sunrise go white together; same weight', async ({ page }) => {
+  // Sunrise only shows when the chart carries panchanga; add it if the fixture lacks it.
+  await page.evaluate(() => {
+    if (!(lastData.panchanga && lastData.panchanga.sunrise)) {
+      lastData.panchanga = Object.assign({}, lastData.panchanga, { sunrise: '05:21:00' });
+      renderRashiData(lastData, lastAnalysis);
+    }
+  });
   const st = () => page.evaluate(() => {
-    const tds = document.querySelectorAll('#rashiTable tr')[1].querySelectorAll('td');
+    const row = [...document.querySelectorAll('#rashiTable tr')].find(tr => tr.querySelector('td.rd-nak'));
+    const tds = row.querySelectorAll('td');
     const cs = el => getComputedStyle(el);
-    return { deg: cs(tds[1]).color, sign: cs(tds[2]).color, nak: cs(tds[3]).color, nakWeight: cs(tds[3]).fontWeight, isNak: tds[3].classList.contains('rd-nak') };
+    const sr = document.querySelector('#rashiTable td.rd-sunrise');
+    return { planet: cs(tds[0]).color, deg: cs(tds[1]).color, sign: cs(tds[2]).color, nak: cs(tds[3]).color,
+             sunrise: cs(sr).color, lord: cs(tds[4]).color, nakWeight: cs(tds[3]).fontWeight,
+             cls: [...tds].slice(1, 4).map(td => td.className) };
   });
   const base = await st();
-  expect(base.isNak).toBe(true);
+  expect(base.cls).toEqual(['rd-deg', 'rd-sign', 'rd-nak']);
   expect(base.nak).toBe(base.deg);
   expect(base.nak).toBe(base.sign);
+  expect(base.sunrise).toBe(base.deg);
   await page.evaluate(() => document.body.classList.add('tw-rashi-nak-white'));
   const on = await st();
-  expect(on.nak).toBe('rgb(255, 255, 255)');
+  for (const k of ['deg', 'sign', 'nak', 'sunrise']) expect(on[k], k).toBe('rgb(255, 255, 255)');
   expect(on.nakWeight).toBe(base.nakWeight); // not bolded (on hold)
-  expect(on.deg).toBe(base.deg);             // other columns untouched
+  expect(on.planet).toBe(base.planet);       // planet and lord colours untouched
+  expect(on.lord).toBe(base.lord);
 });
 
