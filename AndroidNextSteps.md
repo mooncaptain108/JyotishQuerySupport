@@ -96,3 +96,77 @@ exists on GitHub (AGPL licence, Android .gitignore), still empty.
 The app is online-first: with a connection it uses the server exactly
 like the website. Offline is a fallback, not a replacement. See the
 pros and cons discussed on 2026-10-28.
+
+## Sideloading for the end user (Pakistan), checked 2026-10-29
+
+Sideloading is possible today, but the end user has to click past
+several security warnings. Google's new rules will make it harder in
+2027.
+
+### What the end user has to do
+
+1. **Get the APK onto the phone.** Easiest: a download link on
+   `jyotish.allthisisthat.net`, opened in Chrome on the phone. Gmail
+   blocks `.apk` attachments. WhatsApp (sent as a Document) and Google
+   Drive work, but often add their own warnings.
+2. **Turn off Samsung Auto Blocker.** He has a Samsung. On recent One UI
+   versions Auto Blocker is on by default and silently blocks installs
+   from outside the stores: Settings → Security and privacy → Auto
+   Blocker → Off. He can turn it back on after installing, but has to
+   switch it off again for every update.
+3. **Allow "Install unknown apps"** for the app that opens the APK
+   (Chrome, My Files or WhatsApp). Android asks the first time and links
+   straight to the switch.
+4. **Get past Play Protect.** It will probably say it doesn't recognise
+   the app, or block it: "More details → Install anyway". It may offer
+   to send the app to Google for scanning; either answer is fine.
+5. **Move his charts across.** The app keeps its own storage, separate
+   from Chrome and from the installed web app: Export in the browser,
+   Import in the app.
+6. **Updates are manual.** Each new version: send a new APK, repeat
+   steps 1–4. Installing over the old one keeps his data, as long as
+   every version is signed with the same key. A different key forces an
+   uninstall, which wipes his data. So: export before any reinstall, and
+   back up the signing keystore.
+
+Phone needs roughly Android 7 or later (Capacitor's minimum). Any recent
+Samsung is fine.
+
+### Pakistan specifically
+
+- **Nothing Pakistan-specific blocks sideloading.** PTA's device
+  registration (DIRBS) is about phone IMEIs, not apps. He already
+  reaches the server from Pakistan via the website, so online mode works
+  the same.
+- **Google's developer verification rules are the real issue.** Since
+  30 Sep / 1 Oct 2026, certified Android phones in Brazil, Indonesia,
+  Singapore and Thailand refuse to install apps from developers who
+  haven't verified with Google, sideloaded APKs included. A global
+  rollout is planned for 2027, which would include Pakistan.
+  - **Now:** Pakistan isn't in the first wave; steps 1–4 are enough.
+  - **From 2027:** either register as a verified developer through the
+    Android Developer Console (the same kind of identity check that is
+    currently stuck on the Play account), or he uses Google's "advanced
+    flow": enable developer options and wait a one-time 24 hours before
+    unverified installs are allowed; reportedly it also applies to
+    updates. Installing over USB with ADB from a PC still gets around
+    it, but that's not realistic for him.
+
+### Compared with Play internal testing
+
+Internal testing removes nearly all of the above: no Auto Blocker
+change, no unknown-sources switch, no Play Protect warnings, automatic
+updates, and it already meets the verification rules. The cost is the
+USD 25 fee and getting the Play account verified. Given how nervous he
+was about the offline app, internal testing is clearly the smoother
+option for him. Sideloading works for now, but each update means
+repeating the warning screens, and from 2027 it gets worse.
+
+Sources:
+
+- [Android Developers Blog: Android developer verification (June 2026)](https://android-developers.googleblog.com/2026/06/android-developer-verification.html)
+- [Android Developers Blog: rolling out to all developers (March 2026)](https://android-developers.googleblog.com/2026/03/android-developer-verification-rolling-out-to-all-developers.html)
+- [Understanding Android developer verification – Android Developer Console Help](https://support.google.com/android-developer-console/answer/16561738?hl=en)
+- [Android Authority: advanced flow rollout begins](https://www.androidauthority.com/google-android-advanced-flow-sideloading-rollout-begins-3700073/)
+- [XDA: advanced flow ahead of stricter verification](https://www.xda-developers.com/googles-controversial-advanced-flow-sideloading-rolling-out-ahead-of-stricter-developer-verification/)
+- [Android Authority: bypassing the new sideloading rules](https://www.androidauthority.com/how-to-bypass-android-developer-verification-sideloading-rules-3718002/)
