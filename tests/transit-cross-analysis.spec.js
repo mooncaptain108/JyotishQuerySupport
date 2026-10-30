@@ -48,13 +48,17 @@ test('shows Su/Mo abbreviations, not English names, when glyphs are off', async 
 
 // Third section (end-user request, 2026-10-30): the transit planets among
 // themselves, same notation, at the bottom. No planet over itself, and no
-// Rahu/Ketu pair (always exactly opposite).
-test('Transit over Transit section comes last, without self or Rahu/Ketu hits', async ({ page }) => {
+// Rahu/Ketu pair (always exactly opposite), and no MEP hits -- those would
+// repeat Transit over Natal's (end user, 2026-10-30).
+test('Transit over Transit section comes last: planet hits only, without self or Rahu/Ketu', async ({ page }) => {
   const content = await openCross(page, false);
   const heads = await content.locator('.an-section-head').allInnerTexts();
   expect(heads.map(h => h.toUpperCase())).toEqual(['TRANSIT OVER NATAL', 'NATAL OVER TRANSIT', 'TRANSIT OVER TRANSIT']);
-  const hits = await page.evaluate(() => crossPlanetHits(transitAnalysis, transitAnalysis)
-    .filter(h => h.source !== h.target && !(['Rahu','Ketu'].includes(h.source) && ['Rahu','Ketu'].includes(h.target))).length);
+  const want = await page.evaluate(() => {
+    const planet = crossPlanetHits(transitAnalysis, transitAnalysis)
+      .filter(h => h.source !== h.target && !(['Rahu','Ketu'].includes(h.source) && ['Rahu','Ketu'].includes(h.target))).length;
+    return { planet };
+  });
   // Lines after the last head: one header line per source planet plus one per hit (or "None within 5°").
   const lines = await content.evaluate(el => {
     const heads = el.querySelectorAll('.an-section-head');
@@ -63,7 +67,20 @@ test('Transit over Transit section comes last, without self or Rahu/Ketu hits', 
     return out;
   });
   const hitLines = lines.filter(l => / over /.test(l));
-  expect(hitLines.length).toBe(hits);
-  if (!hits) expect(lines).toEqual(['None within 5°']);
+  expect(hitLines.length).toBe(want.planet);
   for (const l of hitLines) expect(l).not.toMatch(/MEP/);
+  if (!want.planet) expect(lines).toEqual(['None within 5°']);
+});
+
+// Section titles: brighter and bolder than other analysis headings, in the
+// untweaked analysis text colour, with or without Analysis text plain.
+test('Chart & Transits section titles use the analysis text colour, bolder, tweak or not', async ({ page }) => {
+  const content = await openCross(page, false);
+  const style = () => content.locator('.an-section-head').first().evaluate(el => {
+    const cs = getComputedStyle(el); return { color: cs.color, weight: cs.fontWeight };
+  });
+  const base = await style();
+  expect(base).toEqual({ color: 'rgb(200, 160, 96)', weight: '800' });
+  await page.evaluate(() => document.body.classList.add('tw-analysis-plain', 'tw-analysis-bold'));
+  expect(await style()).toEqual(base);
 });
