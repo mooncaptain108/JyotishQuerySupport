@@ -78,3 +78,16 @@ test('Muhurta result charts get no tabs', async ({ page }) => {
   await expect(page.locator('#analysisTabs')).toBeHidden();
   await expect(page.locator('#analysisDlgTitle')).toHaveText('Chart Analysis');
 });
+
+test('tab labels are larger and bold, unchanged by Interface Tweaks', async ({ page }) => {
+  await loadChart(page);
+  await page.evaluate(() => openAnalysisDialog());
+  const style = () => page.locator('#analysisTabs button').evaluateAll(bs =>
+    bs.map(b => { const cs = getComputedStyle(b); return [cs.fontWeight, cs.fontSize]; }));
+  const base = await style();
+  for (const [w] of base) expect(w).toBe('700');
+  const rootPx = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+  for (const [, sz] of base) expect(parseFloat(sz)).toBeCloseTo(0.95 * rootPx, 1);
+  await page.evaluate(() => document.body.classList.add('tw-analysis-plain', 'tw-analysis-bold', 'tw-menu-bold', 'tw-panel-bold', 'tw-panel-white'));
+  expect(await style()).toEqual(base);
+});

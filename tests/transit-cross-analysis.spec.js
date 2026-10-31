@@ -84,3 +84,45 @@ test('Chart & Transits section titles use the analysis text colour, bolder, twea
   await page.evaluate(() => document.body.classList.add('tw-analysis-plain', 'tw-analysis-bold'));
   expect(await style()).toEqual(base);
 });
+
+// End-user report 2026-10-30: transit Jupiter at Cancer 29:52 and Ketu at Leo
+// 2:47 (Rahu Aquarius 2:47) are 2.92° apart across a sign boundary and were
+// missed by both Transit over Transit and the Transits tab. Orbs now carry
+// across the cusp, labelled like the MEP hits.
+test('cross-cusp planet hits show in Transit over Transit and the Transits tab', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('jyotish_hide_welcome', '1'));
+  await page.route('**/static/Open.md**', route => route.fulfill({ body: '# Jyotish Query\n\nWelcome.' }));
+  await page.goto('/');
+  await page.evaluate((d) => window.renderChart(d), paulFixture);
+  await page.evaluate(() => setChartViewMode('both'));
+  const pinned = page.waitForResponse(r => r.url().includes('/api/v1/chart/transit') && r.request().postDataJSON().date === '2026-10-30');
+  await page.evaluate(() => {
+    document.getElementById('tDate').value = '2026-10-30';
+    document.getElementById('tTime').value = '12:00:00';
+    document.getElementById('tTz').value = '5';
+    fetchAndRenderTransit();
+  });
+  await pinned;
+  await expect.poll(() => page.evaluate(() => !!transitAnalysis && transitData.birth_data.date === '2026-10-30')).toBe(true);
+  // Same moment the user reported: Jupiter late Cancer, Ketu early Leo.
+  const pos = await page.evaluate(() => Object.fromEntries(transitData.grahas.map(g => [g.graha, [g.rashi, g.degree_in_rashi]])));
+  expect(pos.Jupiter[0]).toBe(4); expect(pos.Jupiter[1]).toBeGreaterThan(29.8);
+  expect(pos.Ketu[0]).toBe(5);    expect(pos.Ketu[1]).toBeLessThan(3);
+
+  await page.evaluate(() => openAnalysisDialog());
+  const tt = await page.locator('#analysisContent').evaluate(el => {
+    const heads = el.querySelectorAll('.an-section-head'); const out = [];
+    for (let n = heads[heads.length - 1].nextElementSibling; n; n = n.nextElementSibling) out.push(n.textContent.replace(/\s+/g, ' ').trim());
+    return out;
+  });
+  // Ketu's own position over Jupiter ("Cusp"), Jupiter's 7th aspect over Rahu ("7th Aspect (Cusp)").
+  const ke = tt.indexOf('Ke'), ju = tt.indexOf('Ju');
+  expect(tt.slice(ke + 1).find(l => / over Ju /.test(l))).toMatch(/^Cusp 2\.9\d° over Ju/);
+  expect(tt.slice(ju + 1).find(l => / over Ra /.test(l))).toMatch(/^7th Aspect \(Cusp\) 2\.9\d° over Ra/);
+
+  // Transits tab: Jupiter afflicted by the Ra-Ke axis across the cusp.
+  await page.locator('#analysisTabs button[data-tab="transits"]').click();
+  const juAff = await page.evaluate(() => transitAnalysis.Jupiter.allFmAspects.map(a => [a.fm, a.orb.toFixed(2), a.via]));
+  expect(juAff).toContainEqual(['Ra-Ke', '2.92', expect.stringContaining('(cusp)')]);
+  await expect(page.locator('#analysisContent')).toContainText('(cusp)');
+});
