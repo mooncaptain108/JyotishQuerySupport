@@ -32,7 +32,7 @@ test('button in Settings opens the popover with grouped options', async ({ page 
     ['Degrees', ['4:30 4.50', 'Degrees bold']],
     ['Planets', ['Su Mo', 'Bold', 'White']],
     ['Signs', ['Ar 1', 'Bold', 'White']],
-    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Dasha Periods slash white', 'Rashi Data text white (degrees, signs, Nakshatra, Sunrise)', 'Transit View text: remove all spaces', 'Transit Control date/time on one line (mobile)']],
+    ['Menus & panels', ['Menu labels bold', 'Panel labels white', 'Panel labels bold', 'Dasha Periods dates white, planets bold', 'Dasha Periods slash white', 'Rashi Data text white (degrees, signs, Nakshatra, Sunrise)', 'Transit View text: remove all spaces', 'Transit Control compressed view (mobile)']],
     ['Dialogs', ['Analysis bold', 'Analysis text plain']],
     ['Chart lines', ['Chart lines white', 'Chart lines bold']],
   ]);
